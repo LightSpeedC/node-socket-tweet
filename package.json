@@ -1,0 +1,26 @@
+{
+  "name": "node-socket-tweet",
+  "version": "0.0.0",
+  "description": "node socket tweet",
+  "main": "server/app.js",
+  "private": true,
+  "engines": {
+    "node": "0.11.x"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "node"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LightSpeedC/node-socket-tweet.git"
+  },
+  "bugs": {
+    "url": "https://github.com/LightSpeedC/node-socket-tweet/issues"
+  },
+  "homepage": "https://github.com/LightSpeedC/node-socket-tweet",
+  "author": "LightSpeedC",
+  "license": "MIT"
+}
