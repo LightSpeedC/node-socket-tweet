@@ -25,7 +25,7 @@ https://devcenter.heroku.com/articles/getting-started-with-nodejs#prepare-the-ap
 https://devcenter.heroku.com/articles/getting-started-with-nodejs#deploy-the-app
 
 ```
-> heroku create --http-git
+> heroku create --http-git APPNAME
 
 > heroku apps:rename NEWNAME
 
