@@ -1,2 +1,2 @@
-git remote add heroku git@heroku.com:node-socket-tweet.git
+git remote add heroku git@heroku.com:APPNAME.git
 pause
