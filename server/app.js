@@ -18,6 +18,10 @@
 		for (var i in headers)
 			res.setHeader(i, headers[i]);
 		res.setHeader('Last-Modified', httpDate(new Date()));
+		console.log('test console.log');
+		console.error('test console.error');
+		console.log('\x1b[42mtest console.log\x1b[m');
+		console.error('\x1b[41mtest console.error\x1b[m');
 		res.writeHead(200, {'Content-Type': 'text/plain'});
 		for (var i in process.argv)
 			res.write('process.argv[' + i + '] \t= ' + process.argv[i] + '\n');
