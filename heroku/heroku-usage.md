@@ -38,7 +38,7 @@ https://devcenter.heroku.com/articles/nodejs-support
 
 npm package.json
 ```
-  main or scripts.start
+  Procfile, main or scripts.start
 ```
 
 ```
