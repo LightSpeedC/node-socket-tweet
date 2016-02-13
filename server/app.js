@@ -19,7 +19,18 @@
 			res.setHeader(i, headers[i]);
 		res.setHeader('Last-Modified', httpDate(new Date()));
 		res.writeHead(200, {'Content-Type': 'text/plain'});
-		res.end('node-socket-tweet 2016-02-13 by LightSpeedC');
+		for (var i in process.argv)
+			res.write('process.argv[' + i + '] \t= ' + process.argv[i] + '\n');
+		res.write('\n');
+		res.write('process.version \t= ' + process.version + '\n');
+		res.write('\n');
+		for (var i in process.versions)
+			res.write('process.versions.' + i + ' \t= ' + process.versions[i] + '\n');
+		res.write('\n');
+		for (var i in process.env)
+			res.write('process.env.' + i + ' \t= ' + process.env[i] + '\n');
+		res.write('\n');
+		res.end('node-socket-tweet 2016-02-13 by LightSpeed');
 	});
 
 	server.listen(PORT, function () {

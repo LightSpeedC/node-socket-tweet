@@ -4,10 +4,11 @@
   "description": "node socket tweet",
   "main": "server/app.js",
   "private": true,
-  "engines": {
+  "!engines": {
     "node": "0.11.x"
   },
   "scripts": {
+    "start": "node server/app 'npm start'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
