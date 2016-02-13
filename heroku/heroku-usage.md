@@ -37,20 +37,26 @@ https://devcenter.heroku.com/articles/getting-started-with-nodejs#deploy-the-app
 https://devcenter.heroku.com/articles/nodejs-support
 
 npm package.json
+
 ```
   Procfile, or scripts.start
 ```
 
 ```
-  engines
+  engines.node
 ```
 
 Procfile
+
 ```
 web: node app.js
 ```
 
 web: npm start
+
+ログ出力の仕方
+
+日本語メッセージも表示できる様にパイプの後ろに node を追加する。
 
 ```
 > heroku logs --tail | node -e process.stdin.pipe(process.stdout)
