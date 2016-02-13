@@ -8,7 +8,7 @@
     "node": "0.11.x"
   },
   "scripts": {
-    "start": "node server/app npm-start",
+    "!start": "node server/app npm-start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
