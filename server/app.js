@@ -15,14 +15,23 @@
 	}
 
 	var server = http.createServer(function (req, res) {
+		//if (req.method === 'GET' && req.url === '/$proxy')
+		//	return processGetProxy(req, res);
+
 		for (var i in headers)
 			res.setHeader(i, headers[i]);
+
 		res.setHeader('Last-Modified', httpDate(new Date()));
-		console.log('test console.log コンソール');
-		console.error('test console.error コンソール');
-		console.log('\x1b[42mtest console.log コンソール\x1b[m');
-		console.error('\x1b[41mtest console.error コンソール\x1b[m');
+
+		//console.log('\x1b[42mtest console.log コンソール\x1b[m');
+
 		res.writeHead(200, {'Content-Type': 'text/plain'});
+
+		console.log('\x1b[44mreq.method: ' + req.method + ', req.url: ' + req.url + '\x1b[m');
+
+		res.write('req.method: ' + req.method + '\n');
+		res.write('req.url: ' + req.url + '\n');
+
 		for (var i in process.argv)
 			res.write('process.argv[' + i + '] \t= ' + process.argv[i] + '\n');
 		res.write('\n');
@@ -34,11 +43,20 @@
 		for (var i in process.env)
 			res.write('process.env.' + i + ' \t= ' + process.env[i] + '\n');
 		res.write('\n');
-		res.end('node-socket-tweet 2016-02-13 by LightSpeed');
+		res.end('node-socket-tweet by LightSpeedC (2016-02-14 09:06)');
 	});
 
 	server.listen(PORT, function () {
 		console.log('port %s server started', PORT);
 	});
+
+	function processGetProxy(req, res) {
+		//res.setHeader('Last-Modified', httpDate(new Date()));
+		//for (var i in headers)
+		//	res.setHeader(i, headers[i]);
+
+		//req.socket 
+	}
+
 
 })();
