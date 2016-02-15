@@ -10,6 +10,7 @@ void function () {
 	var log = require('log-manager').getLogger();
 	var zlib = require('zlib');
 	var TransformXor = require('../lib/transform-xor');
+	var zz = require('../lib/zip-unzip');
 
 	log.info('node', process.version, path.basename(__filename));
 	process.title = path.basename(__filename);
@@ -75,23 +76,13 @@ void function () {
 					var x3 = new TransformXor(Number(process.env.APP_XOR2));
 					var x4 = new TransformXor(Number(process.env.APP_XOR1));
 
-					var gz = zlib.createGzip();
-					var uz = zlib.createUnzip();
+					c.pipe(x1);
+					zz.zip(x1, x2);
+					x2.pipe(s);
 
-					gz.on('error', function (err) {
-						log.warn('gz error', err);
-						c.destroy();
-						s.destroy();
-					});
-
-					uz.on('error', function (err) {
-						log.warn('uz error', err);
-						c.destroy();
-						s.destroy();
-					});
-
-					c.pipe(x1).pipe(gz).pipe(x2).pipe(s);
-					s.pipe(x3).pipe(uz).pipe(x4).pipe(c);
+					s.pipe(x3);
+					zz.unzip(x3, x4);
+					x4.pipe(c);
 
 				});
 

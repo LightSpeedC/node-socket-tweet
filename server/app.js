@@ -8,6 +8,7 @@
 	var zlib = require('zlib');
 	var log = require('log-manager').getLogger();
 	var TransformXor = require('../lib/transform-xor');
+	var zz = require('../lib/zip-unzip');
 
 	var PORT = process.env.PORT || 3000;
 	if (!process.env.APP_DUMP_URL) throw new Error('APP_DUMP_URL');
@@ -35,19 +36,19 @@
 	var httpPort;
 
 	var serverMain = net.createServer({allowHalfOpen:true},
-			function connectionMain(s) {
+			function connectionMain(c) {
 		log.trace('(main) connected');
-		var c;
-		s.on('error', function error(err) {
+		var s;
+		c.on('error', function error(err) {
 			log.warn('(main) client error:', err);
-			if (c) c.destroy();
-			s.destroy();
+			if (s) s.destroy();
+			c.destroy();
 		});
-		s.on('readable', function readable() {
-			var buff = s.read();
+		c.on('readable', function readable() {
+			var buff = c.read();
 			if (!buff) return;
 
-			s.removeListener('readable', readable);
+			c.removeListener('readable', readable);
 
 			var lines = buff.toString().split('\n');
 			var words = lines[0].trim().split(' ');
@@ -82,36 +83,36 @@
 				str += 'node-socket-tweet by LightSpeedC (2016-02-14 09:06)\n';
 
 				var ret = new Buffer(str);
-				s.write('HTTP/1.1 200 OK\r\n' +
+				c.write('HTTP/1.1 200 OK\r\n' +
 					'Content-Type: text/plain\r\n' +
 					'Content-Length: ' + ret.length + '\r\n' +
 					'\r\n');
-				s.end(ret);
+				c.end(ret);
 				return;
 			}
 
 			if (words[0] !== process.env.APP_PROXY_METHOD ||
 				words[1] !== process.env.APP_PROXY_URL ||
 				!words[2].startsWith('HTTP/1.')) {
-				s.write('HTTP/1.1 404 Not Found\r\n' +
+				c.write('HTTP/1.1 404 Not Found\r\n' +
 					'Content-Type: text/plain\r\n' +
 					'Content-Length: 3\r\n' +
 					'\r\nerr');
-				s.end();
+				c.end();
 				return;
 			}
 
-			s.write('HTTP/1.1 200 OK\r\n' +
+			c.write('HTTP/1.1 200 OK\r\n' +
 				'Content-Type: text/plain\r\n' +
 				'Content-Length: 1\r\n' +
 				'\r\n1');
 
-			var c = net.connect(
+			var s = net.connect(
 					{port:httpPort, host:'localhost', allowHalfOpen:true},
 					function connection() {
 				log.trace('(main) http connected');
 			});
-			c.on('error', function error(err) {
+			s.on('error', function error(err) {
 				log.warn('(main) server error:', err);
 				c.destroy();
 				s.destroy();
@@ -122,23 +123,13 @@
 			var x3 = new TransformXor(Number(process.env.APP_XOR2));
 			var x4 = new TransformXor(Number(process.env.APP_XOR1));
 
-			var gz = zlib.createGzip();
-			var uz = zlib.createUnzip();
+			c.pipe(x3);
+			zz.unzip(x3, x4);
+			x4.pipe(s);
 
-			gz.on('error', function (err) {
-				log.warn('gz error', err);
-				c.destroy();
-				s.destroy();
-			});
-
-			uz.on('error', function (err) {
-				log.warn('uz error', err);
-				c.destroy();
-				s.destroy();
-			});
-
-			c.pipe(x1).pipe(gz).pipe(x2).pipe(s);
-			s.pipe(x3).pipe(uz).pipe(x4).pipe(c);
+			s.pipe(x1);
+			zz.zip(x1, x2);
+			x2.pipe(c);
 
 		});
 	}).on('error', function error(err) {
@@ -209,6 +200,7 @@
 
 		var s = net.connect(port, host, function connect() {
 			c.write('HTTP/1.0 200 Connection established\r\n\r\n');
+			if (head && head.length) s.write(head);
 		});
 
 		c.on('error', function error(err) {
@@ -223,7 +215,6 @@
 			c.destroy();
 		});
 
-		if (head && head.length) c.write(head);
 		s.pipe(c);
 		c.pipe(s);
 
