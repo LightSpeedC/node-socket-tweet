@@ -15,11 +15,11 @@ void function () {
 	log.info('node', process.version, path.basename(__filename));
 	process.title = path.basename(__filename);
 
-	if (!process.env.APP_DUMP_URL) throw new Error('APP_DUMP_URL');
+	if (!process.env.APP_DUMP_URL)     throw new Error('APP_DUMP_URL');
 	if (!process.env.APP_PROXY_METHOD) throw new Error('APP_PROXY_METHOD');
-	if (!process.env.APP_PROXY_URL) throw new Error('APP_PROXY_URL');
-	if (!process.env.APP_XOR1) throw new Error('APP_XOR1');
-	if (!process.env.APP_XOR2) throw new Error('APP_XOR2');
+	if (!process.env.APP_PROXY_URL)    throw new Error('APP_PROXY_URL');
+	if (!process.env.APP_XOR1)         throw new Error('APP_XOR1');
+	if (!process.env.APP_XOR2)         throw new Error('APP_XOR2');
 
 	try { var configs = require('./local-internal-proxy-config'); }
 	catch (e) { var configs = require('./internal-proxy-config'); }
