@@ -99,6 +99,7 @@
 					'Content-Length: 3\r\n' +
 					'\r\nerr');
 				c.end();
+				log.debug('eh!?', buff.toString());
 				return;
 			}
 
