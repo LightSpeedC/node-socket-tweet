@@ -11,17 +11,18 @@
 	var zz = require('../lib/zip-unzip');
 
 	var PORT = process.env.PORT || 3000;
-	if (!process.env.APP_DUMP_URL) throw new Error('APP_DUMP_URL');
+	if (!process.env.APP_DUMP_URL)     throw new Error('APP_DUMP_URL');
 	if (!process.env.APP_PROXY_METHOD) throw new Error('APP_PROXY_METHOD');
-	if (!process.env.APP_PROXY_URL) throw new Error('APP_PROXY_URL');
-	if (!process.env.APP_XOR1) throw new Error('APP_XOR1');
-	if (!process.env.APP_XOR2) throw new Error('APP_XOR2');
+	if (!process.env.APP_PROXY_URL)    throw new Error('APP_PROXY_URL');
+	if (!process.env.APP_XOR1)         throw new Error('APP_XOR1');
+	if (!process.env.APP_XOR2)         throw new Error('APP_XOR2');
 
 	log.setLevel('trace');
 
 	for (var i of Object.keys(process.env).filter(s => s.startsWith('APP_')).sort())
 		console.log('\x1b[42m' + 'env: ' + i + ' \t= ' + process.env[i] + '\x1b[m');
 	console.log();
+	log.info(require('os').networkInterfaces());
 
 	var headers = {'Content-Type': 'text/html; charset=UTF-8',
 		'Cahche-Control': 'private, no-store, no-cache, must-revalidate',
@@ -37,7 +38,10 @@
 
 	var serverMain = net.createServer({allowHalfOpen:true},
 			function connectionMain(c) {
-		log.trace('(main) connected');
+		log.trace('(main) connected:',
+			c.remoteAddress, c.remotePort,
+			c.localAddress, c.localPort,
+			c.address());
 		var s;
 		c.on('error', function error(err) {
 			log.warn('(main) client error:', err);
@@ -80,7 +84,7 @@
 					str += 'process.env.' + i + ' \t= ' + process.env[i] + '\n';
 				str += '\n';
 
-				str += 'node-socket-tweet by LightSpeedC (2016-02-14 09:06)\n';
+				str += 'node-socket-tweet by LightSpeedC (2016-02-19 00:10)\n';
 
 				var ret = new Buffer(str);
 				c.write('HTTP/1.1 200 OK\r\n' +
@@ -111,14 +115,16 @@
 			var s = net.connect(
 					{port:httpPort, host:'localhost', allowHalfOpen:true},
 					function connection() {
-				log.trace('(main) http connected');
+				log.trace('(main) http connected:',
+					s.remoteAddress, s.remotePort,
+					s.localAddress, s.localPort,
+					s.address());
 			});
-			s.on('error', function error(err) {
-				log.warn('(main) server error:', err);
-				c.destroy();
-				s.destroy();
-			});
+			s.on('error', makeError('(main) server error:', s, c));
+			c.pipe(s);
+			s.pipe(c);
 
+/*
 			var x1 = new TransformXor(Number(process.env.APP_XOR1));
 			var x2 = new TransformXor(Number(process.env.APP_XOR2));
 			var x3 = new TransformXor(Number(process.env.APP_XOR2));
@@ -131,15 +137,22 @@
 			s.pipe(x1);
 			zz.zip(x1, x2);
 			x2.pipe(c);
+*/
 
 		});
 	}).on('error', function error(err) {
 		log.warn('(main) server error:', err);
-	}).listen(PORT, function listening() {
-		log.info('(main) port %s server started', serverMain.address().port);
+	}).listen(PORT, function listeningServer() {
+		log.info('(main) server started:',
+			serverMain.address());
 	});
 
-	var serverHttp = http.createServer(function (req1, res1) {
+	var serverHttp = http.createServer(function connectionHttp(req1, res1) {
+		var c = req1.connection;
+		log.trace('(http) connected:',
+			c.remoteAddress, c.remotePort,
+			c.localAddress, c.localPort,
+			c.address());
 		console.log('\x1b[44mreq: ' + req1.method + ' ' + req1.url + ' (' +
 			req1.headers.host + ')\x1b[m');
 
@@ -161,40 +174,25 @@
 
 		var req2 = http.request(options, function response(res2) {
 			res1.writeHead(res2.statusCode, res2.statusMessage, res2.headers);
+			res2.on('error', makeError('(http) res2:', req1.connection, req2.connection));
 			res2.pipe(res1);
-			res2.on('error', function error(err) {
-				log.warn('(http) res2', err);
-				req1.connection.destroy();
-				req2.connection.destroy();
-			});
 		});
-		req1.on('error', function error(err) {
-			log.warn('(http) req1', err);
-			req1.connection.destroy();
-			req2.connection.destroy();
-		});
-		res1.on('error', function error(err) {
-			log.warn('(http) res1', err);
-			req1.connection.destroy();
-			req2.connection.destroy();
-		});
-		req2.on('error', function error(err) {
-			log.warn('(http) req2', err);
-			req1.connection.destroy();
-			req2.connection.destroy();
-		});
+
+		req1.on('error', makeError('(http) req1:', req1.connection, req2.connection));
+		res1.on('error', makeError('(http) res1:', req1.connection, req2.connection));
+		req2.on('error', makeError('(http) req2:', req1.connection, req2.connection));
 		req1.pipe(req2);
 
 	}).on('error', function error(err) {
 		log.warn('(http) server error:', err);
 	});
 
-	serverHttp.listen(function () {
+	serverHttp.listen(function listeningHttp() {
 		httpPort = serverHttp.address().port;
-		log.info('(http) port %s server started', httpPort);
+		log.info('(http) server started:', serverHttp.address());
 	});
 
-	serverHttp.on('connect', function connect(req, c, head) {
+	serverHttp.on('connect', function connectHttp(req, c, head) {
 		var x = url.parse('https://' + req.url);
 		var host = x.hostname, port = x.port || 443;
 		log.info('https connect:', req.url);
@@ -204,21 +202,20 @@
 			if (head && head.length) s.write(head);
 		});
 
-		c.on('error', function error(err) {
-			log.warn('(https) connect client error:', err);
-			s.destroy();
-			c.destroy();
-		});
-
-		s.on('error', function error(err) {
-			log.warn('(https) connect server error:', err);
-			s.destroy();
-			c.destroy();
-		});
+		c.on('error', makeError('(https) connect client error:', s, c));
+		s.on('error', makeError('(https) connect server error:', s, c));
 
 		s.pipe(c);
 		c.pipe(s);
 
 	});
+
+	function makeError(msg, s, c) {
+		return function error(err) {
+			log.warn(msg, err);
+			s.destroy();
+			c.destroy();
+		}
+	}
 
 })();
