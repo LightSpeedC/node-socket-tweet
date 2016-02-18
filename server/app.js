@@ -43,6 +43,9 @@
 			c.localAddress, c.localPort,
 			c.address());
 		var s;
+		c.on('end', function () {
+			log.trace('(main) disconnected');
+		});
 		c.on('error', function error(err) {
 			log.warn('(main) client error:', err);
 			if (s) s.destroy();
@@ -182,6 +185,9 @@
 		res1.on('error', makeError('(http) res1:', req1.connection, req2.connection));
 		req2.on('error', makeError('(http) req2:', req1.connection, req2.connection));
 		req1.pipe(req2);
+		c.on('end', function () {
+			log.trace('(http) disconnected');
+		});
 
 	}).on('error', function error(err) {
 		log.warn('(http) server error:', err);
