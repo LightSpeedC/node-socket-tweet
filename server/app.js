@@ -38,13 +38,12 @@
 
 	var serverMain = net.createServer({allowHalfOpen:true},
 			function connectionMain(c) {
+		var startTime = Date.now() / 1000;
 		log.trace('(main) connected:',
-			c.remoteAddress, c.remotePort,
-			c.localAddress, c.localPort,
-			c.address());
+			[c.localAddress, c.localPort, c.remoteAddress, c.remotePort]);
 		var s;
 		c.on('end', function () {
-			log.trace('(main) disconnected');
+			log.trace('(main) disconnected:', (Date.now() / 1000 - startTime).toFixed(3), 'sec');
 		});
 		c.on('error', function error(err) {
 			log.warn('(main) client error:', err);
@@ -116,12 +115,14 @@
 				'\r\n1');
 
 			var s = net.connect(
-					{port:httpPort, host:'localhost', allowHalfOpen:true},
+					{port:httpPort, host:'::1', allowHalfOpen:true},
 					function connection() {
-				log.trace('(main) http connected:',
-					s.remoteAddress, s.remotePort,
-					s.localAddress, s.localPort,
-					s.address());
+				log.trace('(conn) connected:',
+					[s.localAddress, s.localPort, s.remoteAddress, s.remotePort]);
+				var startTime = Date.now() / 1000;
+				s.on('end', function () {
+					log.trace('(conn) disconnected:', (Date.now() / 1000 - startTime).toFixed(3), 'sec');
+				});
 			});
 			s.on('error', makeError('(main) server error:', s, c));
 			c.pipe(s);
@@ -151,11 +152,13 @@
 	});
 
 	var serverHttp = http.createServer(function connectionHttp(req1, res1) {
+		var startTime = Date.now() / 1000;
 		var c = req1.connection;
 		log.trace('(http) connected:',
-			c.remoteAddress, c.remotePort,
-			c.localAddress, c.localPort,
-			c.address());
+			[c.localAddress, c.localPort, c.remoteAddress, c.remotePort]);
+		c.on('end', function () {
+			log.trace('(http) disconnected:', (Date.now() / 1000 - startTime).toFixed(3), 'sec');
+		});
 		console.log('\x1b[44mreq: ' + req1.method + ' ' + req1.url + ' (' +
 			req1.headers.host + ')\x1b[m');
 
@@ -185,9 +188,6 @@
 		res1.on('error', makeError('(http) res1:', req1.connection, req2.connection));
 		req2.on('error', makeError('(http) req2:', req1.connection, req2.connection));
 		req1.pipe(req2);
-		c.on('end', function () {
-			log.trace('(http) disconnected');
-		});
 
 	}).on('error', function error(err) {
 		log.warn('(http) server error:', err);
