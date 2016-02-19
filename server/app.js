@@ -34,16 +34,28 @@
 		return s.slice(0, 3)+ ', ' + s.slice(8, 10) + ' ' + s.slice(4, 7) + ' ' + s.slice(11, 24) + ' GMT';
 	}
 
+	var resolution = 9;
+	function time() {
+		var hrtime = process.hrtime();
+		return hrtime[0] + hrtime[1] / 1e9;
+		//return Date.now() / 1000;
+	}
+
+	//var 
+	var sessionNoSeed = 10000;
+
 	var httpPort;
 
 	var serverMain = net.createServer({allowHalfOpen:true},
 			function connectionMain(c) {
-		var startTime = Date.now() / 1000;
-		log.trace('(main) connected:',
+		var startTime = time();
+		var sessionNo = ++sessionNoSeed;
+		log.trace('(main) connect:', [sessionNo],
 			[c.localAddress, c.localPort, c.remoteAddress, c.remotePort]);
 		var s;
 		c.on('end', function () {
-			log.trace('(main) disconnected:', (Date.now() / 1000 - startTime).toFixed(3), 'sec');
+			log.trace('(main) disconn:', [sessionNo],
+				(time() - startTime).toFixed(resolution), 'sec');
 		});
 		c.on('error', function error(err) {
 			log.warn('(main) client error:', err);
@@ -117,11 +129,13 @@
 			var s = net.connect(
 					{port:httpPort, host:'::1', allowHalfOpen:true},
 					function connection() {
-				log.trace('(conn) connected:',
+				var sessionNo = ++sessionNoSeed;
+				log.trace('(conn) connect:', [sessionNo],
 					[s.localAddress, s.localPort, s.remoteAddress, s.remotePort]);
-				var startTime = Date.now() / 1000;
+				var startTime = time();
 				s.on('end', function () {
-					log.trace('(conn) disconnected:', (Date.now() / 1000 - startTime).toFixed(3), 'sec');
+					log.trace('(conn) disconn:', [sessionNo],
+						(time() - startTime).toFixed(resolution), 'sec');
 				});
 			});
 			s.on('error', makeError('(main) server error:', s, c));
@@ -152,12 +166,14 @@
 	});
 
 	var serverHttp = http.createServer(function connectionHttp(req1, res1) {
-		var startTime = Date.now() / 1000;
+		var sessionNo = ++sessionNoSeed;
+		var startTime = time();
 		var c = req1.connection;
-		log.trace('(http) connected:',
+		log.trace('(http) connected:', [sessionNo],
 			[c.localAddress, c.localPort, c.remoteAddress, c.remotePort]);
 		c.on('end', function () {
-			log.trace('(http) disconnected:', (Date.now() / 1000 - startTime).toFixed(3), 'sec');
+			log.trace('(http) disconnected:', [sessionNo],
+				(time() - startTime).toFixed(resolution), 'sec');
 		});
 		console.log('\x1b[44mreq: ' + req1.method + ' ' + req1.url + ' (' +
 			req1.headers.host + ')\x1b[m');
