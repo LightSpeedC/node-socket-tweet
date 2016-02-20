@@ -27,8 +27,7 @@ void function () {
 	log.setLevel(configs.logLevel);
 	log.info(configs);
 	for (var i of Object.keys(process.env).filter(s => s.startsWith('APP_')).sort())
-		console.log('\x1b[42m' + 'env: ' + i + ' \t= ' + process.env[i] + '\x1b[m');
-	console.log();
+		log.info('env: ' + i + ' \t= ' + process.env[i]);
 
 	var forwarderId = 20000;
 	var myName = '(internal-proxy)';
@@ -60,7 +59,7 @@ void function () {
 					var lines = buff.toString().split('\n');
 					var words = lines[0].trim().split(' ');
 
-					log.info(words);
+					log.trace(words);
 
 					if (!words[0].startsWith('HTTP/1.') ||
 							words[1] !== '200' ||
@@ -71,6 +70,12 @@ void function () {
 						return;
 					}
 
+					var x1 = new TransformXor(Number(process.env.APP_XOR1));
+					var x2 = new TransformXor(Number(process.env.APP_XOR1));
+					c.pipe(x1).pipe(s);
+					s.pipe(x2).pipe(c);
+
+/*
 					var x1 = new TransformXor(Number(process.env.APP_XOR1));
 					var x2 = new TransformXor(Number(process.env.APP_XOR2));
 					var x3 = new TransformXor(Number(process.env.APP_XOR2));
@@ -83,28 +88,25 @@ void function () {
 					s.pipe(x3);
 					zz.unzip(x3, x4);
 					x4.pipe(c);
+*/
 
 				});
 
 			});
 			s.on('error', function error(err) {
-				log.warn(myName, 'forwarder error', err);
+				log.warn(myName, 'server error', err);
 				s.destroy();
 			});
 			s.on('end', function end() {
-				log.debug(myName, 'forwarder disconnected');
+				log.debug(myName, 'server disconnected');
 			});
 
-			var received = false;
 			c.on('error', function error(err) {
 				log.warn(myName, 'client error', err);
 				c.destroy();
 			});
 			c.on('end', function end() {
 				log.debug(myName, 'client disconnected');
-				if (!received) {
-					log.warn(myName, 'client has gone!');
-				}
 			});
 
 		}).listen(config.servicePort, function listeningService() {
