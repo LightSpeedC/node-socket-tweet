@@ -16,8 +16,9 @@
 	if (!process.env.APP_PROXY_URL)    throw new Error('APP_PROXY_URL');
 	if (!process.env.APP_XOR1)         throw new Error('APP_XOR1');
 	if (!process.env.APP_XOR2)         throw new Error('APP_XOR2');
+	if (!process.env.APP_LOG_LEVEL)    throw new Error('APP_LOG_LEVEL');
 
-	log.setLevel('trace');
+	log.setLevel(process.env.APP_LOG_LEVEL);
 
 	for (var i of Object.keys(process.env).filter(s => s.startsWith('APP_')).sort())
 		console.log('\x1b[42m' + 'env: ' + i + ' \t= ' + process.env[i] + '\x1b[m');
@@ -41,7 +42,6 @@
 		//return Date.now() / 1000;
 	}
 
-	//var 
 	var sessionNoSeed = 10000;
 
 	var httpPort;
@@ -58,7 +58,7 @@
 				(time() - startTime).toFixed(resolution), 'sec');
 		});
 		c.on('error', function error(err) {
-			log.warn('(main) client error:', err);
+			log.warn('(main)  client error:', err);
 			if (s) s.destroy();
 			c.destroy();
 		});
@@ -138,9 +138,11 @@
 						(time() - startTime).toFixed(resolution), 'sec');
 				});
 			});
-			s.on('error', makeError('(main) server error:', s, c));
-			c.pipe(s);
-			s.pipe(c);
+			s.on('error', makeError('(main)  server error:', s, c));
+			var x1 = new TransformXor(Number(process.env.APP_XOR1));
+			var x2 = new TransformXor(Number(process.env.APP_XOR1));
+			c.pipe(x1).pipe(s);
+			s.pipe(x2).pipe(c);
 
 /*
 			var x1 = new TransformXor(Number(process.env.APP_XOR1));
@@ -159,7 +161,7 @@
 
 		});
 	}).on('error', function error(err) {
-		log.warn('(main) server error:', err);
+		log.warn('(main)  server error:', err);
 	}).listen(PORT, function listeningServer() {
 		log.info('(main) server started:',
 			serverMain.address());
@@ -175,8 +177,8 @@
 			log.trace('(http) disconnected:', [sessionNo],
 				(time() - startTime).toFixed(resolution), 'sec');
 		});
-		console.log('\x1b[44mreq: ' + req1.method + ' ' + req1.url + ' (' +
-			req1.headers.host + ')\x1b[m');
+		log.debug('http req: ' + req1.method + ' ' + req1.url +
+			' (' + req1.headers.host + ')');
 
 		var headers = {};
 		for (var i in req1.headers) headers[i] = req1.headers[i];
@@ -206,7 +208,7 @@
 		req1.pipe(req2);
 
 	}).on('error', function error(err) {
-		log.warn('(http) server error:', err);
+		log.warn('(http)  server error:', err);
 	});
 
 	serverHttp.listen(function listeningHttp() {
@@ -217,19 +219,18 @@
 	serverHttp.on('connect', function connectHttp(req, c, head) {
 		var x = url.parse('https://' + req.url);
 		var host = x.hostname, port = x.port || 443;
-		log.info('https connect:', req.url);
+		log.debug('https connect:', req.url);
 
 		var s = net.connect(port, host, function connect() {
 			c.write('HTTP/1.0 200 Connection established\r\n\r\n');
 			if (head && head.length) s.write(head);
 		});
 
-		c.on('error', makeError('(https) connect client error:', s, c));
-		s.on('error', makeError('(https) connect server error:', s, c));
+		c.on('error', makeError('(https) client error:', s, c));
+		s.on('error', makeError('(https) server error:', s, c));
 
 		s.pipe(c);
 		c.pipe(s);
-
 	});
 
 	function makeError(msg, s, c) {
