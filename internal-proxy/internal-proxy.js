@@ -48,6 +48,7 @@ void function () {
 				s.write(process.env.APP_PROXY_METHOD + ' ' +
 						process.env.APP_PROXY_URL + ' HTTP/1.1\r\nHost: ' +
 						configs.proxyHost + ':' + configs.proxyPort +
+						'\r\nConnection: keep-alive'
 						'\r\n\r\n');
 
 				s.on('readable', function readable() {
