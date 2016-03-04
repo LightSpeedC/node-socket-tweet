@@ -4,7 +4,6 @@
 	var http = require('http');
 	var net = require('net');
 	var url = require('url');
-	var log = require('log-manager').getLogger();
 	var zlib = require('zlib');
 	var log = require('log-manager').getLogger();
 	var TransformXor = require('../lib/transform-xor');
